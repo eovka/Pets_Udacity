@@ -15,6 +15,9 @@
  */
 package com.example.android.pets;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
@@ -26,31 +29,21 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import com.example.android.pets.data.PetContract.PetEntry;
+import com.example.android.pets.data.PetDbHelper;
 
 /**
  * Allows user to create a new pet or edit an existing one.
  */
 public class EditorActivity extends AppCompatActivity {
-
-    /** EditText field to enter the pet's name */
     private EditText mNameEditText;
-
-    /** EditText field to enter the pet's breed */
     private EditText mBreedEditText;
-
-    /** EditText field to enter the pet's weight */
     private EditText mWeightEditText;
-
-    /** EditText field to enter the pet's gender */
     private Spinner mGenderSpinner;
 
-    /**
-     * Gender of the pet. The possible values are:
-     * 0 for unknown gender, 1 for male, 2 for female.
-     */
-    private int mGender = 0;
+    private int mGender = PetEntry.GENDER_UNKNOWN;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,7 +112,9 @@ public class EditorActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             // Respond to a click on the "Save" menu option
             case R.id.action_save:
-                // Do nothing for now
+                // Save pet to database
+                insertPet();
+                finish();
                 return true;
             // Respond to a click on the "Delete" menu option
             case R.id.action_delete:
@@ -132,5 +127,26 @@ public class EditorActivity extends AppCompatActivity {
                 return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void insertPet() {
+        String petName = mNameEditText.getText().toString().trim();
+        String petBreed = mBreedEditText.getText().toString().trim();
+        int petWeight = Integer.parseInt(mWeightEditText.getText().toString().trim());
+
+        PetDbHelper mDbHelper = new PetDbHelper(this);
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(PetEntry.COLUMN_PET_NAME, petName);
+        values.put(PetEntry.COLUMN_PET_BREED, petBreed);
+        values.put(PetEntry.COLUMN_PET_WEIGHT, petWeight);
+        values.put(PetEntry.COLUMN_PET_GENDER, mGender);
+        long newRowId = db.insert(PetEntry.TABLE_NAME, null, values);
+
+        if (newRowId == -1) {
+            Toast.makeText(this, "Error with saving pet.", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this,  "Pet saved with id: " + newRowId, Toast.LENGTH_SHORT).show();
+        }
     }
 }
