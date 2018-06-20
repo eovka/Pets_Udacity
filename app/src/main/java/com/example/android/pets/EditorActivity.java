@@ -146,13 +146,18 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
     private void savePet() {
         String petName = mNameEditText.getText().toString().trim();
         String petBreed = mBreedEditText.getText().toString().trim();
-        int petWeight = Integer.parseInt(mWeightEditText.getText().toString().trim());
+        String petWeight = mWeightEditText.getText().toString().trim();
 
+        if (clickedPetUri == null && TextUtils.isEmpty(petName) && TextUtils.isEmpty(petBreed)
+        && TextUtils.isEmpty(petWeight) && mGender == PetEntry.GENDER_UNKNOWN) {
+            return;
+        }
         ContentValues values = new ContentValues();
         values.put(PetEntry.COLUMN_PET_NAME, petName);
         values.put(PetEntry.COLUMN_PET_BREED, petBreed);
-        values.put(PetEntry.COLUMN_PET_WEIGHT, petWeight);
+        values.put(PetEntry.COLUMN_PET_WEIGHT, TextUtils.isEmpty(petWeight) ? 0 : Integer.parseInt(petWeight));
         values.put(PetEntry.COLUMN_PET_GENDER, mGender);
+
         if (clickedPetUri == null) {
             Uri newUri = getContentResolver().insert(PetEntry.CONTENT_URI, values);
             if (newUri == null) {
