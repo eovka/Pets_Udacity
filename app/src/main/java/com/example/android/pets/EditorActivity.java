@@ -36,7 +36,6 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import com.example.android.pets.data.PetContract;
 import com.example.android.pets.data.PetContract.PetEntry;
 
 /**
@@ -128,7 +127,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
             // Respond to a click on the "Save" menu option
             case R.id.action_save:
                 // Save pet to database
-                insertPet();
+                savePet();
                 finish();
                 return true;
             // Respond to a click on the "Delete" menu option
@@ -144,7 +143,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         return super.onOptionsItemSelected(item);
     }
 
-    private void insertPet() {
+    private void savePet() {
         String petName = mNameEditText.getText().toString().trim();
         String petBreed = mBreedEditText.getText().toString().trim();
         int petWeight = Integer.parseInt(mWeightEditText.getText().toString().trim());
@@ -154,12 +153,20 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         values.put(PetEntry.COLUMN_PET_BREED, petBreed);
         values.put(PetEntry.COLUMN_PET_WEIGHT, petWeight);
         values.put(PetEntry.COLUMN_PET_GENDER, mGender);
-        Uri newUri = getContentResolver().insert(PetEntry.CONTENT_URI, values);
-
-        if (newUri == null) {
-            Toast.makeText(this, getString(R.string.error_saving), Toast.LENGTH_SHORT).show();
+        if (clickedPetUri == null) {
+            Uri newUri = getContentResolver().insert(PetEntry.CONTENT_URI, values);
+            if (newUri == null) {
+                Toast.makeText(this, getString(R.string.error_saving), Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, getString(R.string.pet_saved), Toast.LENGTH_SHORT).show();
+            }
         } else {
-            Toast.makeText(this, getString(R.string.pet_saved), Toast.LENGTH_SHORT).show();
+            long rowsAffected = getContentResolver().update(clickedPetUri, values, null, null);
+            if (rowsAffected == 0) {
+                Toast.makeText(this, getString(R.string.error_updating), Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, getString(R.string.pet_updated), Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
