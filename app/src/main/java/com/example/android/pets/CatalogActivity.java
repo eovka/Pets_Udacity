@@ -19,7 +19,6 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
-import com.example.android.pets.data.PetContract;
 import com.example.android.pets.data.PetContract.PetEntry;
 
 /**
@@ -91,7 +90,7 @@ public class CatalogActivity extends AppCompatActivity implements LoaderManager.
         values.put(PetEntry.COLUMN_PET_BREED, "Terrier");
         values.put(PetEntry.COLUMN_PET_GENDER, PetEntry.GENDER_MALE);
         values.put(PetEntry.COLUMN_PET_WEIGHT, 7);
-        Uri newUri = getContentResolver().insert(PetEntry.CONTENT_URI, values);
+        getContentResolver().insert(PetEntry.CONTENT_URI, values);
     }
 
     public void showDeleteDialog() {
