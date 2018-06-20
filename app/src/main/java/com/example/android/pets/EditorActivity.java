@@ -16,6 +16,7 @@
 package com.example.android.pets;
 
 import android.content.ContentValues;
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -25,10 +26,12 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.app.NavUtils;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -50,12 +53,21 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
     private int mGender = PetEntry.GENDER_UNKNOWN;
     private static final int LOADER_ID = 1;
+    private boolean petChanged;
+
+    private View.OnTouchListener touchListener = new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            petChanged = true;
+            return false;
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
-        
+
         clickedPetUri = getIntent().getData();
         if (clickedPetUri != null) {
             setTitle(getString(R.string.edit_pet));
@@ -71,6 +83,11 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         mGenderSpinner = findViewById(R.id.spinner_gender);
 
         setupSpinner();
+
+        mNameEditText.setOnTouchListener(touchListener);
+        mBreedEditText.setOnTouchListener(touchListener);
+        mWeightEditText.setOnTouchListener(touchListener);
+        mGenderSpinner.setOnTouchListener(touchListener);
     }
 
     /**
@@ -112,6 +129,25 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         });
     }
 
+    private void showUnsavedChangesDialog(DialogInterface.OnClickListener discardButtonClickListener) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(R.string.unsaved_changes_dialog_msg);
+        builder.setPositiveButton(R.string.discard, discardButtonClickListener);
+        builder.setNegativeButton(R.string.keep_editing, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // User clicked the "Keep editing" button, so dismiss the dialog
+                // and continue editing the pet.
+                if (dialog != null) {
+                    dialog.dismiss();
+                }
+            }
+        });
+
+        // Create and show the AlertDialog
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu options from the res/menu/menu_editor.xml file.
@@ -136,8 +172,23 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
                 return true;
             // Respond to a click on the "Up" arrow button in the app bar
             case android.R.id.home:
-                // Navigate back to parent activity (CatalogActivity)
-                NavUtils.navigateUpFromSameTask(this);
+                if (!petChanged) {
+                    NavUtils.navigateUpFromSameTask(EditorActivity.this);
+                    return true;
+                }
+                // Otherwise if there are unsaved changes, setup a dialog to warn the user.
+                // Create a click listener to handle the user confirming that
+                // changes should be discarded.
+                DialogInterface.OnClickListener discardButtonClickListener =
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                // User clicked "Discard" button, navigate to parent activity.
+                                NavUtils.navigateUpFromSameTask(EditorActivity.this);
+                            }
+                        };
+                // Show a dialog that notifies the user they have unsaved changes
+                showUnsavedChangesDialog(discardButtonClickListener);
                 return true;
         }
         return super.onOptionsItemSelected(item);
@@ -149,7 +200,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         String petWeight = mWeightEditText.getText().toString().trim();
 
         if (clickedPetUri == null && TextUtils.isEmpty(petName) && TextUtils.isEmpty(petBreed)
-        && TextUtils.isEmpty(petWeight) && mGender == PetEntry.GENDER_UNKNOWN) {
+                && TextUtils.isEmpty(petWeight) && mGender == PetEntry.GENDER_UNKNOWN) {
             return;
         }
         ContentValues values = new ContentValues();
@@ -204,5 +255,28 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         mBreedEditText.setText(null);
         mWeightEditText.setText(null);
         mGenderSpinner.setSelection(0);
+    }
+
+    @Override
+    public void onBackPressed() {
+        // If the pet hasn't changed, continue with handling back button press
+        if (!petChanged) {
+            super.onBackPressed();
+            return;
+        }
+
+        // Otherwise if there are unsaved changes, setup a dialog to warn the user.
+        // Create a click listener to handle the user confirming that changes should be discarded.
+        DialogInterface.OnClickListener discardButtonClickListener =
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // User clicked "Discard" button, close the current activity.
+                        finish();
+                    }
+                };
+
+        // Show dialog that there are unsaved changes
+        showUnsavedChangesDialog(discardButtonClickListener);
     }
 }
